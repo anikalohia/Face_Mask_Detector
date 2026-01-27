@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<video id="video" autoplay></video>
+<canvas id="canvas" hidden></canvas>
+<h2 id="result">Loading...</h2>
+
+<script>
+const video = document.getElementById("video");
+
+navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+.then(stream => video.srcObject = stream);
+
+setInterval(() => {
+  const canvas = document.getElementById("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  canvas.toBlob(blob => {
+    const form = new FormData();
+    form.append("frame", blob);
+
+    fetch("/predict", { method:"POST", body: form })
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById("result").innerText = d.label;
+      });
+  });
+}, 700);
+</script>
+</html>
