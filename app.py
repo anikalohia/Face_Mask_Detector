@@ -1,10 +1,17 @@
 from flask import Flask,render_template,Response,request,jsonify
 import cv2,numpy as np
 from tensorflow import keras
+import os
+import gdown
 from keras.models import load_model
 
 app=Flask(__name__)
-model = load_model("model/mask_model.h5")
+MODEL_PATH = "model/mask_model.h5"
+if not os.path.exists(MODEL_PATH):
+    url = "https://drive.google.com/file/d/19PVM-GZDALU8ANKxVNSazNupGurB_Rjf/view?usp=sharing"
+    gdown.download(url, MODEL_PATH, quiet=False)
+
+model = load_model(MODEL_PATH)
 face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 def detect_face(gray):
     faces = face_cascade.detectMultiScale(
