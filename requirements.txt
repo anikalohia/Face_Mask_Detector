@@ -44,3 +44,4 @@ Werkzeug==3.1.5
 wheel==0.46.3
 wrapt==2.0.1
 gunicorn==21.2.0
+gdown==5.2.0
