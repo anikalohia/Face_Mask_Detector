@@ -1,22 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Mask Detector</title>
+<style>
+  body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  #video {
+    border: 5px solid #4CAF50;
+    border-radius: 12px;
+    width: 480px;
+    height: 360px;
+    object-fit: cover;
+    margin-bottom: 20px;
+  }
+
+  #result {
+    font-size: 2rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 12px;
+    color: #ffffff;
+    background-color: #333333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+  }
+
+  /* Color feedback based on label */
+  #result.mask {
+    background-color: #4CAF50; /* green for mask */
+  }
+
+  #result.no-mask {
+    background-color: #f44336; /* red for no mask */
+  }
+</style>
+</head>
+<body>
 <video id="video" autoplay></video>
 <canvas id="canvas" hidden></canvas>
 <h2 id="result">Loading...</h2>
 
 <script>
 const video = document.getElementById("video");
+const resultEl = document.getElementById("result");
 
-navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
-.then(stream => video.srcObject = stream);
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream);
 
 setInterval(() => {
   const canvas = document.getElementById("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
+  canvas.width = 224;
+  canvas.height = 224;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0);
+  ctx.drawImage(video, 0, 0, 224, 224);
 
   canvas.toBlob(blob => {
     const form = new FormData();
@@ -25,9 +73,16 @@ setInterval(() => {
     fetch("/predict", { method:"POST", body: form })
       .then(r => r.json())
       .then(d => {
-        document.getElementById("result").innerText = d.label;
+        // update text
+        resultEl.innerText = d.label;
+
+        // add class for color
+        resultEl.classList.remove("mask", "no-mask");
+        if(d.label === "Mask") resultEl.classList.add("mask");
+        else if(d.label === "No Mask") resultEl.classList.add("no-mask");
       });
   });
 }, 700);
 </script>
+</body>
 </html>

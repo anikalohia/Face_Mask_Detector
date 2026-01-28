@@ -6,44 +6,46 @@ from keras.models import load_model
 app=Flask(__name__)
 model = load_model("model/mask_model.h5")
 face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-def detect_face(img):
-    coods = face_cascade.detectMultiScale(img)
-    return coods
+def detect_face(gray):
+    faces = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=5,
+        minSize=(60, 60)
+    )
+    return faces
+
+def detect_face_mask(img):
+    y_pred = model.predict(img.reshape(1,224,224,3))
+    return y_pred[0][0]
 
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/predict',methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     file = request.files["frame"]
-    img = np.frombuffer(file.read(),np.uint8)
-    img = cv2.imdecode(img,cv2.IMREAD_COLOR)
-    coods = detect_face(cv2.cvtColor(img,cv2.COLOR_BGR2GRAY))
-    if len(coods) == 0:
-        return jsonify({"label":"No Face Detected"})
-    
-    
-    x, y, w, h = coods[0]   # take first face
-    face = img[y:y+h, x:x+w]   # CROP
+    img = np.frombuffer(file.read(), np.uint8)
+    frame = cv2.imdecode(img, cv2.IMREAD_COLOR)
 
-    face = cv2.resize(face, (224,224))
-    face = face / 255.0
-    face = np.expand_dims(face, axis=0)
-   
+    frame = cv2.resize(frame, (224, 224))
+    frame = frame.astype("float32")
+
     
+    if frame.max() <= 1.0:
+        frame *= 255.0
+
+    print(frame.shape, frame.min(), frame.max())
+
+    pred = detect_face_mask(frame)
     
-    pred = model.predict(face)[0][0]
-    print(pred)
-    
-    if pred < 0.5:
-        label = "Mask"
-    else:
-        label = "No Mask"
-        
-    
-    return jsonify({"label":label})
-    
+
+    label = "No Mask" if pred > 0.5 else "Mask"
+    return jsonify({"label": label})
+
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
