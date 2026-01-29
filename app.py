@@ -6,11 +6,24 @@ import gdown
 from keras.models import load_model
 
 app=Flask(__name__)
-MODEL_PATH = "model/mask_model.h5"
-if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/file/d/19PVM-GZDALU8ANKxVNSazNupGurB_Rjf/view?usp=sharing"
-    gdown.download(url, MODEL_PATH, quiet=False)
+def ensure_model():
+    import os, gdown
 
+    os.makedirs("model", exist_ok=True)
+
+    path = "model/mask_detector.h5"
+
+    if not os.path.exists(path):
+        gdown.download(
+            "https://drive.google.com/file/d/19PVM-GZDALU8ANKxVNSazNupGurB_Rjf/view?usp=sharing",
+            path,
+            quiet=False
+        )
+
+    return path
+
+
+MODEL_PATH = ensure_model()
 model = load_model(MODEL_PATH)
 face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 def detect_face(gray):
