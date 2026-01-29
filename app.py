@@ -17,13 +17,16 @@ def ensure_model():
         gdown.download(
             "https://drive.google.com/file/d/19PVM-GZDALU8ANKxVNSazNupGurB_Rjf/view?usp=sharing",
             path,
-            quiet=False
+            quiet=False,
+            fuzzy=True
         )
 
     return path
 
 
 MODEL_PATH = ensure_model()
+if os.path.getsize(MODEL_PATH) < 1_000_000:  # < 1 MB
+    raise RuntimeError("Downloaded model file is invalid or corrupted")
 model = load_model(MODEL_PATH)
 face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 def detect_face(gray):
